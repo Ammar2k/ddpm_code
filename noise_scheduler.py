@@ -2,7 +2,7 @@ import torch
 
 
 class LinearNoiseScheduler:
-    def __init__(self, num_timesteps, beta_start, beta_end):
+    def __inits__(self, num_timesteps, beta_start, beta_end):
         self.num_timesteps = num_timesteps
         self.beta_start = beta_start
         self.beta_end = beta_end
