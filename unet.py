@@ -15,24 +15,30 @@ def get_time_embedding(time_steps, t_emb_dim):
 class DownBlock(nn.Module):
     def __init__(self, in_channels, out_channels, t_emb_dim, down_sample, num_heads):
         super().__init__()
-        self.down_sample = down_sample
+        self.down_sample = down_sample # a boolean value
+        # first convolution block. normalize, actiavtion function, and convolution layer
         self.resnet_conv_first = nn.Sequential(
             nn.GroupNorm(8, in_channels),
             nn.SiLU(),
             nn.Conv2d(in_channels, out_channels, kernel_size=3, stride=1, padding=1)
         )
+        # inject positional embeddings after matching shape to first resnet block output
         self.t_emb_layers = nn.Sequential(
             nn.SiLU(),
             nn.Linear(t_emb_dim, out_channels)
         )
+        # second convolition block
         self.resnet_conv_second = nn.Sequential(
             nn.GroupNorm(8, out_channels),
             nn.SiLU(),
             nn.Conv2d(in_channels, out_channels, kernel_size=3, stride=1, padding=1)
         )
+        # attention block
         self.attention_norm = nn.GroupNorm(8, out_channels)
         self.attention = nn.MultiheadAttention(out_channels, num_heads, batch_first=True)
+        # residual skip connection
         self.residual_input_conv = nn.Conv2d(in_channels, out_channels, kernel_size=1)
+        # downsample
         self.down_sample_conv = nn.Conv2d(out_channels, out_channels, kernel_size=4,
                                         stride=2, padding=1) if self.down_sample else nn.Identity()
 
