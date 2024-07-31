@@ -3,11 +3,13 @@ import torcn.nn as nn
 
 
 def get_time_embedding(time_steps, t_emb_dim):
+    # create a tensor of frequencies starting from 1 and increasing exponentially to 10000
     factor = 10000 ** ((torch.arange(
         start = 0, end = t_emb_dim // 2, device = time_steps.device) / (t_emb_dim // 2)
         ))
-    
+    # first transform 1D tensor to 2D tensor, then repeat until we reach the number of values in factor
     t_emb = time_steps[:, None].repeat(1, t_emb_dim // 2) / factor
+    # take sine and cosine of above result, and concatenate across last (inner) dimension
     t_emb = torch.cat([torch.sin(t_emb), torch.cos(t_emb)], dim=-1)
     return t_emb
 
