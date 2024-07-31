@@ -166,3 +166,26 @@ class UpBlock(nn.Module):
         # upsample
         self.up_sample_conv = nn.ConvTranspose2d(in_channels // 2, in_channels // 2, kernel_size=4,
                                                 stride=2, padding=1) if self.up_sample else nn.Identity()
+        
+    def forward(self, x, out_down, t_emb):
+        x = self.up_sample_conv(x)
+        x = torch.cat([x, out_down], dim=1)
+        
+        # Resnet block
+        out = x
+        resnet_input = out
+        out = self.resnet_conv_first(out)
+        out = out + self.t_emb_layers(t_emb)[:, :, None, None]
+        out = self.resnet_conv_second(out)
+        out = out + self.residual_input_conv(resnet_input)
+
+        # Attention block
+        batch_size, channels, h, w = out.shape
+        in_attn = out.reshape(batch_size, channels, h*w)
+        in_attn = self.attention_norm(in_attn)
+        in_attn = in_attn.transpose(1, 2)
+        out_attn, _ = self.attention(in_attn, in_attn, in_attn)
+        out_attn = out_attn.transpose(1, 2).reshape(batch_size, channels, h, w)
+        out = out + out_attn
+
+        return out
