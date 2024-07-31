@@ -109,3 +109,30 @@ class MidBlock(nn.Module):
             nn.Conv2d(in_channels, out_channels, kernel_size=1),
             nn.Conv2d(out_channels, out_channels, kernel_size=1)
         ])
+
+    def forward(self, x, t_emb):
+        out = x
+        # first resnet block
+        resnet_input = out
+        out = self.resnet_conv_first[0](out)
+        out = out + self.t_emb_layers[0](t_emb)[:, :, None, None]
+        out = self.resnet_conv_second[0](out)
+        out = out + self.residual_input_conv[0](resnet_input)
+
+        # attention block
+        batch_size, channels, h, w = out.shape
+        in_attn = out.reshape(batch_size, channels, h*w)
+        in_attn = self.attention_norm(in_attn)
+        in_attn = in_attn.transpose(1,2)
+        out_attn, _ = self.attention(in_attn, in_attn, in_attn)
+        out_attn = out_attn.transpose(1, 2).reshape(batch_size, channels, h, w)
+        out = out + out_attn
+
+        # second resnet block
+        resnet_input = out
+        out = self.resnet_conv_first[1](out)
+        out = out + self.t_emb_layers[1](t_emb)[:, :, None, None]
+        out = self.resnet_conv_first[1](out)
+        out = out + self.residual_input_conv[1](resnet_input)
+
+        return out
