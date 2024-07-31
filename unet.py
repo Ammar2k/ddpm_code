@@ -166,11 +166,11 @@ class UpBlock(nn.Module):
         # upsample
         self.up_sample_conv = nn.ConvTranspose2d(in_channels // 2, in_channels // 2, kernel_size=4,
                                                 stride=2, padding=1) if self.up_sample else nn.Identity()
-        
+
     def forward(self, x, out_down, t_emb):
         x = self.up_sample_conv(x)
         x = torch.cat([x, out_down], dim=1)
-        
+
         # Resnet block
         out = x
         resnet_input = out
