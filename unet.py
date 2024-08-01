@@ -205,6 +205,7 @@ class Unet(nn.Module):
             nn.Linear(self.t_emb_dim, self.t_emb_dim)
         )
         self.up_sample = list(reversed(self.down_sample))
+        # getting input ready for downsample block
         self.conv_in = nn.Conv2d(im_channels, self.down_channels[0], kernel_size=3, padding=1)
 
         self.downs = nn.ModuleList([])
