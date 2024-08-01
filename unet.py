@@ -189,3 +189,38 @@ class UpBlock(nn.Module):
         out = out + out_attn
 
         return out
+
+
+class Unet(nn.Module):
+    def __init__(self, im_channels):
+        super().__init__()
+        self.down_channels = [32, 64, 128, 256]
+        self.mid_channels = [256, 256, 256]
+        self. t_emb_dim = 128
+        self.down_sample = [True, True, True]
+
+        self.t_proj = nn.Sequential(
+            nn.Linear(self.t_emb_dim, self.t_emb_dim),
+            nn.SiLU(),
+            nn.Linear(self.t_emb_dim, self.t_emb_dim)
+        )
+        self.up_sample = list(reversed(self.down_sample))
+        self.conv_in = nn.Conv2d(im_channels, self.down_channels[0], kernel_size=3, padding=1)
+
+        self.downs = nn.ModuleList([])
+        for i in range(len(self.down_channels) - 1):
+            self.downs.append(DownBlock(self.down_channels[i], self.down_channels[i+1],
+                                        self.t_emb_dim, self.down_sample[i], num_heads=4))
+
+        self.mids = nn.ModuleList([])
+        for i in range(len(self.mid_channels) - 1):
+            self.mids.append(MidBlock(self.mid_channels[i], self.mid_channels[i+1],
+                                    self.t_emb_dim, num_heads=4))
+
+        self.ups = nn.ModuleList([])
+        for i in reversed(range(len(self.down_channels) - 1)):
+            self.ups.append(UpBlock(self.down_channels[i]*2, self.down_channels[i-1] if i != 0 else 16,
+                                    self.t_emb_dim, self.up_sample[i], num_heads=4))
+            
+            self.norm_out = nn.GroupNorm(8, 16)
+            self.conv_out = nn.Conv2d(16, im_channels, kernel_size=3, padding=1)
