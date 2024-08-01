@@ -225,3 +225,27 @@ class Unet(nn.Module):
 
         self.norm_out = nn.GroupNorm(8, 16)
         self.conv_out = nn.Conv2d(16, im_channels, kernel_size=3, padding=1)
+
+    def forward(self, x, t):
+        out = self.conv_in(x)
+        t_emb = get_time_embedding(t, self.t_emb_dim)
+        t_emb = self.t_proj(t_emb)
+
+        down_outs = []
+        for down in self.downs:
+            print(out.shape)
+            down_outs.append(down)
+            out = down(out, t_emb)
+
+        for mid in self.mids:
+            print(out.shape)
+            out = mid(out, t_emb)
+
+        for up in self.ups:
+            down_out = down_outs.pop()
+            print(out, down_out.shape)
+            out = up(out, down_out, t_emb)
+        out = self.norm_out(out)
+        out = nn.SiLU()(out)
+        out = self.conv_out(out)
+        return out
