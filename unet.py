@@ -221,6 +221,6 @@ class Unet(nn.Module):
         for i in reversed(range(len(self.down_channels) - 1)):
             self.ups.append(UpBlock(self.down_channels[i]*2, self.down_channels[i-1] if i != 0 else 16,
                                     self.t_emb_dim, self.up_sample[i], num_heads=4))
-            
-            self.norm_out = nn.GroupNorm(8, 16)
-            self.conv_out = nn.Conv2d(16, im_channels, kernel_size=3, padding=1)
+
+        self.norm_out = nn.GroupNorm(8, 16)
+        self.conv_out = nn.Conv2d(16, im_channels, kernel_size=3, padding=1)
