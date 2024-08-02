@@ -227,24 +227,31 @@ class Unet(nn.Module):
         self.conv_out = nn.Conv2d(16, im_channels, kernel_size=3, padding=1)
 
     def forward(self, x, t):
+        # prepare for downblock
         out = self.conv_in(x)
+        # initial processing of time embeddings
         t_emb = get_time_embedding(t, self.t_emb_dim)
         t_emb = self.t_proj(t_emb)
 
+        # DownBlock
         down_outs = []
         for down in self.downs:
             print(out.shape)
             down_outs.append(down)
             out = down(out, t_emb)
 
+        # MidBlock
         for mid in self.mids:
             print(out.shape)
             out = mid(out, t_emb)
 
+        # UpBlock
         for up in self.ups:
             down_out = down_outs.pop()
             print(out, down_out.shape)
             out = up(out, down_out, t_emb)
+
+        # Post upblock final processing
         out = self.norm_out(out)
         out = nn.SiLU()(out)
         out = self.conv_out(out)
